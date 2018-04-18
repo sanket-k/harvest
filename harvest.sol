@@ -10,15 +10,17 @@ contract timeDelay {
     
     address private admin;
     
-    uint public seed;
-    uint public harvest;
+    struct seed_data {
+        uint fund;
+        uint harvest_time;
+        uint seed;
+    }
     
+    mapping (address => seed_data) public seedInfo;
     
     // constructor
     function timeDelay() public {
         admin = msg.sender;
-        seed = now;
-        harvest = (seed + 10 days);
     }
     
     // modifier 
@@ -27,20 +29,29 @@ contract timeDelay {
         _;
     }
     
-    //receive funds from any address
     function() public payable {
         
+        uint amount = msg.value;
+        
+        seedInfo[msg.sender].fund = amount;
+        seedInfo[msg.sender].harvest_time = 10 days;
+        seedInfo[msg.sender].seed = now;
     }
     
-    //return funds only to admin
-    function withdraw() public onlyAdmin {
-        require (block.timestamp > harvest);
-        msg.sender.transfer(address(this).balance);
+    function withdraw() public {
+        require (block.timestamp > (seedInfo[msg.sender].seed + seedInfo[msg.sender].harvest_time) );
+        msg.sender.transfer(seedInfo[msg.sender].fund);
+        seedInfo[msg.sender].fund = 0;
     }
     
-    // incase anything comes up admin is able to kill contract and retrive funds
+    function showLockedFunds() constant public returns (uint x) {
+        return seedInfo[msg.sender].fund;
+    }
+    
+    
     function kill() public onlyAdmin {
         selfdestruct(admin);
     }
+    
     
 }
